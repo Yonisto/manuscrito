@@ -62,6 +62,10 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .busy{position:fixed;inset:0;background:rgba(244,241,234,.6);display:none;align-items:center;justify-content:center;font-family:Caveat,cursive;font-size:30px;color:var(--accent);z-index:8}
   .busy.show{display:flex}
+  .sws{display:flex;gap:6px;align-items:center}
+  .sw{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;flex:none}
+  .sw.on{box-shadow:0 0 0 2px var(--accent)}
+  .sws input[type=color]{width:30px;height:26px}
   .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 4px}
   .seg button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-weight:500;color:var(--text);cursor:pointer;transition:.15s}
   .seg button svg{width:44px;height:44px}
@@ -90,6 +94,29 @@
       </div>
       <label for="text">Párrafo o consulta</label>
       <textarea id="text" placeholder="Pega aquí el texto que quieres pasar a mano…"></textarea>
+      <label class="chk"><input type="checkbox" id="detect" checked> Detectar temas y subtemas</label>
+      <div class="row">
+        <div>
+          <label>Color de temas</label>
+          <div class="sws" data-for="temaColor">
+            <span class="sw" data-c="#b0261d" style="background:#b0261d" title="Rojo"></span>
+            <span class="sw" data-c="#1d3a8f" style="background:#1d3a8f" title="Azul"></span>
+            <span class="sw" data-c="#6b2fa0" style="background:#6b2fa0" title="Morado"></span>
+            <input type="color" id="temaColor" value="#b0261d" title="Otro color">
+          </div>
+        </div>
+        <div>
+          <label>Color de subtemas</label>
+          <div class="sws" data-for="subColor">
+            <span class="sw" data-c="#2d6b3a" style="background:#2d6b3a" title="Verde"></span>
+            <span class="sw" data-c="#c25e00" style="background:#c25e00" title="Naranja"></span>
+            <span class="sw" data-c="#6b2fa0" style="background:#6b2fa0" title="Morado"></span>
+            <input type="color" id="subColor" value="#2d6b3a" title="Otro color">
+          </div>
+        </div>
+      </div>
+      <label class="chk"><input type="checkbox" id="temaLine" checked> Subrayar los temas</label>
+      <p class="hint">Se detectan solos: líneas cortas sin punto final, numeradas (1. o 1.1), en MAYÚSCULAS o que terminan en “:”. También puedes marcarlos tú escribiendo <b># Tema</b> o <b>## Subtema</b> al inicio de la línea.</p>
     </section>
 
     <section>
@@ -217,8 +244,8 @@
   let canvases = [];
 
   const sampleTitle = 'Los caracoles';
-  const sampleText = 'Los caracoles son moluscos que cargan sobre su espalda una concha en forma de espiral, la cual les sirve de refugio contra los depredadores y la sequía. Se desplazan lentamente gracias a un pie musculoso que produce una baba especial que les ayuda a deslizarse sobre casi cualquier superficie, incluso sobre el filo de una hoja.\nLa mayoría de los caracoles de tierra son hermafroditas y se alimentan de hojas, frutos y hongos. Prefieren salir de noche y en los días de lluvia, porque necesitan mantener su cuerpo húmedo para sobrevivir.';
-  const OLD_SAMPLE_START = 'La gestión de riesgos es el conjunto';
+  const sampleText = '1. Características\nLos caracoles son moluscos que cargan sobre su espalda una concha en forma de espiral, la cual les sirve de refugio contra los depredadores y la sequía.\nEl movimiento:\nSe desplazan lentamente gracias a un pie musculoso que produce una baba especial que les ayuda a deslizarse sobre casi cualquier superficie, incluso sobre el filo de una hoja.\n2. Alimentación y hábitos\nLa mayoría de los caracoles de tierra son hermafroditas y se alimentan de hojas, frutos y hongos. Prefieren salir de noche y en los días de lluvia, porque necesitan mantener su cuerpo húmedo para sobrevivir.';
+  const OLD_SAMPLE_STARTS = ['La gestión de riesgos es el conjunto', 'Los caracoles son moluscos que cargan'];
 
   // ---------- Utilidades ----------
   function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),3200); }
@@ -292,7 +319,7 @@
   function escapeHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
   // ---------- Opciones ----------
-  const fields = ['title','name','date','text','paper','size','paperColor','align','indent','span','fontPct','letterSp','wordSp','natural','mixMode'];
+  const fields = ['title','name','date','text','detect','temaColor','subColor','temaLine','paper','size','paperColor','align','indent','span','fontPct','letterSp','wordSp','natural','mixMode'];
   function readOpts(){
     const o = {};
     fields.forEach(id=>{ const el=$(id); o[id] = el.type==='checkbox'?el.checked:(el.type==='range'?parseFloat(el.value):el.value); });
@@ -309,7 +336,7 @@
     if (!o){ $('text').value = sampleText; $('title').value = sampleTitle; return; }
     fields.forEach(id=>{ const el=$(id); if (o[id]===undefined) return; if (el.type==='checkbox') el.checked=o[id]; else el.value=o[id]; });
     // si aún tenía el texto de ejemplo anterior, mostrar el nuevo
-    if ((o.text||'').startsWith(OLD_SAMPLE_START)){ $('text').value = sampleText; if (o.title==='La gestión de riesgos') $('title').value = sampleTitle; }
+    if (OLD_SAMPLE_STARTS.some(s=>(o.text||'').startsWith(s))){ $('text').value = sampleText; if (o.title==='La gestión de riesgos') $('title').value = sampleTitle; }
     if (o.ink){ ink=o.ink; $('inkCustom').value = ink; document.querySelectorAll('.ink').forEach(x=>x.classList.toggle('on', x.dataset.c===ink)); }
     if (o.seed) seed=o.seed;
   }
@@ -360,15 +387,45 @@
     return {glyphs, width};
   }
 
+  // ---------- Temas y subtemas ----------
+  // Devuelve [{text, kind}] con kind = 'normal' | 'tema' | 'subtema'
+  function classifyParas(raw, detect){
+    const paras = raw.replace(/\r/g,'').split('\n');
+    const info = paras.map((p, i) => {
+      const t = p.trim();
+      if (/^#{2,}\s+/.test(t)) return {text:t.replace(/^#{2,}\s+/,''), cls:'sub!'};
+      if (/^#\s+/.test(t))     return {text:t.replace(/^#\s+/,''), cls:'tema!'};
+      if (!detect || !t) return {text:p, cls:'normal'};
+      const nWords = t.split(/\s+/).length;
+      const hasNext = paras.slice(i+1).some(x=>x.trim());   // un título va antes de algo
+      const short = nWords <= 10 && t.length <= 80 && !/[.;,]$/.test(t) && hasNext;
+      if (!short) return {text:p, cls:'normal'};
+      if (/^\d+\.\d+/.test(t)) return {text:t, cls:'sub!'};                       // 1.1 Subtema
+      if (/^(\d+|[IVXLC]+)[.)-]\s*\S/.test(t)) return {text:t, cls:'tema!'};       // 1. Tema / II) Tema
+      const letters = t.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g,'');
+      if (letters.length >= 3 && letters === letters.toUpperCase()) return {text:t, cls:'tema!'}; // MAYÚSCULAS
+      if (/:$/.test(t)) return {text:t, cls:'sub!'};                               // termina en ":"
+      if (nWords <= 8 && /^[A-ZÁÉÍÓÚÑ¿¡"“]/.test(t)) return {text:t, cls:'plain'};  // línea corta tipo título
+      return {text:p, cls:'normal'};
+    });
+    // Si hay temas claros (numerados, mayúsculas o #), las líneas cortas simples son subtemas; si no, son temas.
+    const strongTema = info.some(x=>x.cls==='tema!');
+    return info.map(x=>({text:x.text, kind: x.cls==='tema!' ? 'tema' : x.cls==='sub!' ? 'subtema' : x.cls==='plain' ? (strongTema ? 'subtema' : 'tema') : 'normal'}));
+  }
+
   function layout(o, g, active){
     const r = rng(o.seed);
     const space = o.fontSize * 0.32 * (o.wordSp/100);
-    const indentPx = o.indent ? o.fontSize * 1.6 : 0;
+    const indentBase = o.indent ? o.fontSize * 1.6 : 0;
     const lines = [];
-    const paras = o.text.replace(/\r/g,'').split('\n');
-    for (const p of paras){
+    const paras = classifyParas(o.text, o.detect);
+    for (const {text:p, kind} of paras){
       const words = p.split(/[ \t]+/).filter(Boolean);
-      if (!words.length){ lines.push({words:[], last:true, indent:0}); continue; }
+      if (!words.length){ lines.push({words:[], last:true, indent:0, kind:'normal'}); continue; }
+      // un renglón libre antes de cada tema (salvo al inicio)
+      if (kind==='tema' && lines.length && lines[lines.length-1].words.length) lines.push({words:[], last:true, indent:0, kind:'normal'});
+      const indentPx = kind==='normal' ? indentBase : 0;
+      const startIdx = lines.length;
       let cur = [], curW = indentPx, first = true;
       for (const w of words){
         let wd = buildWord(w, o, r, active);
@@ -387,6 +444,7 @@
         } else { cur.push(wd); curW += need; }
       }
       lines.push({words:cur, last:true, indent:first?indentPx:0});
+      for (let k=startIdx; k<lines.length; k++){ lines[k].kind = kind; if (kind!=='normal') lines[k].noJustify = true; }
     }
     // quitar renglones vacíos finales
     while (lines.length && !lines[lines.length-1].words.length) lines.pop();
@@ -472,17 +530,19 @@
       } else if (row.type==='title'){
         const rr = rng(o.seed+99);
         const words = o.title.trim().split(/\s+/).map(t=>buildWord(t,o,rr,active));
+        const tcol = o.detect ? o.temaColor : ink;
+        ctx.fillStyle = tcol;
         const sc = 1.12, sp = space*sc;
         const total = words.reduce((a,w)=>a+w.width*sc,0) + sp*(words.length-1);
         let x = Math.max(g.left, g.left + (g.maxW-total)/2);
         const start = x;
         words.forEach(w=>{ x += drawGlyphs(ctx, w.glyphs, x, baseY, o, r, slope, sc) + sp; });
-        // subrayado a mano
-        ctx.save(); ctx.strokeStyle=ink; ctx.globalAlpha=0.8; ctx.lineWidth=Math.max(1.6,o.fontSize*0.05); ctx.lineCap='round';
-        ctx.beginPath(); const uy = baseY + o.fontSize*0.16; ctx.moveTo(start-4, uy+gauss(r)*j*2);
-        ctx.quadraticCurveTo((start+x-sp)/2, uy + gauss(r)*j*5, x-sp+4, uy+gauss(r)*j*3); ctx.stroke(); ctx.restore();
+        underline(start, x-sp, baseY, tcol);
+        ctx.fillStyle = ink;
       } else if (row.type==='text'){
         const ln = row.ln; if (!ln.words.length) return;
+        const color = ln.kind==='tema' ? o.temaColor : ln.kind==='subtema' ? o.subColor : ink;
+        ctx.fillStyle = color;
         let gap = space;
         if (o.align==='justify' && !ln.last && !ln.noJustify && ln.words.length>1){
           const natural = ln.words.reduce((a,w)=>a+w.width,0);
@@ -491,12 +551,21 @@
           if (gj < space*3.2) gap = gj;
         }
         let x = x0 + ln.indent;
+        const startX = x;
         ln.words.forEach(w=>{
           const wobble = gauss(r)*j*space*0.15;
           x += drawGlyphs(ctx, w.glyphs, x, baseY, o, r, slope, 1) + gap + wobble;
         });
+        if (ln.kind==='tema' && o.temaLine) underline(startX, x-gap, baseY, color);
+        ctx.fillStyle = ink;
       }
     });
+    // subrayado a mano
+    function underline(x1, x2, baseY, color){
+      ctx.save(); ctx.strokeStyle=color; ctx.globalAlpha=0.8; ctx.lineWidth=Math.max(1.6,o.fontSize*0.05); ctx.lineCap='round';
+      ctx.beginPath(); const uy = baseY + o.fontSize*0.16; ctx.moveTo(x1-4, uy+gauss(r)*j*2);
+      ctx.quadraticCurveTo((x1+x2)/2, uy + gauss(r)*j*5, x2+4, uy+gauss(r)*j*3); ctx.stroke(); ctx.restore();
+    }
     return c;
   }
 
@@ -609,6 +678,9 @@
     document.querySelectorAll('.ink').forEach(x=>x.classList.toggle('on', x===el)); schedule();
   }));
   $('inkCustom').addEventListener('input', e=>{ ink = e.target.value; document.querySelectorAll('.ink').forEach(x=>x.classList.remove('on')); schedule(); });
+  function syncSwatches(){ document.querySelectorAll('.sws').forEach(box=>{ const v=$(box.dataset.for).value.toLowerCase(); box.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on', s.dataset.c===v)); }); }
+  document.querySelectorAll('.sws .sw').forEach(s=>s.addEventListener('click',()=>{ const inp=$(s.parentElement.dataset.for); inp.value=s.dataset.c; syncSwatches(); schedule(); }));
+  ['temaColor','subColor'].forEach(id=>$(id).addEventListener('input', syncSwatches));
   document.querySelectorAll('#paperSeg button').forEach(b=>b.addEventListener('click',()=>{ $('paper').value=b.dataset.v; syncPaperSeg(); schedule(); }));
   $('reseed').addEventListener('click', ()=>{ seed = Math.floor(Math.random()*1e9); schedule(); });
   $('pdfBtn').addEventListener('click', downloadPdf);
@@ -626,7 +698,7 @@
 
   // ---------- Inicio ----------
   (async function init(){
-    restore(); syncPaperSeg(); updateOutputs();
+    restore(); syncPaperSeg(); syncSwatches(); updateOutputs();
     const saved = await idbAll();
     for (const s of saved){
       try{ await registerFont(s.family, s.data.slice(0)); fonts.push({family:s.family, label:s.label||s.family, builtin:false, enabled:false}); }catch(e){}
