@@ -83,7 +83,7 @@
     <section>
       <h2>1 · Texto</h2>
       <label for="title">Título (opcional)</label>
-      <input type="text" id="title" placeholder="Ej.: La gestión de riesgos">
+      <input type="text" id="title" placeholder="Ej.: Los caracoles">
       <div class="row">
         <div><label for="name">Nombre</label><input type="text" id="name" placeholder="Tu nombre"></div>
         <div><label for="date">Fecha</label><input type="text" id="date" placeholder="15/11/2026"></div>
@@ -216,7 +216,9 @@
   let seed = 12345;
   let canvases = [];
 
-  const sampleText = 'La gestión de riesgos es el conjunto de acciones que buscan prevenir, reducir y controlar los efectos de los desastres sobre la población, los bienes y el ambiente.\nEn Ecuador, la Secretaría Nacional de Gestión de Riesgos coordina la preparación de las comunidades frente a amenazas como inundaciones, sismos y deslizamientos.';
+  const sampleTitle = 'Los caracoles';
+  const sampleText = 'Los caracoles son moluscos que cargan sobre su espalda una concha en forma de espiral, la cual les sirve de refugio contra los depredadores y la sequía. Se desplazan lentamente gracias a un pie musculoso que produce una baba especial que les ayuda a deslizarse sobre casi cualquier superficie, incluso sobre el filo de una hoja.\nLa mayoría de los caracoles de tierra son hermafroditas y se alimentan de hojas, frutos y hongos. Prefieren salir de noche y en los días de lluvia, porque necesitan mantener su cuerpo húmedo para sobrevivir.';
+  const OLD_SAMPLE_START = 'La gestión de riesgos es el conjunto';
 
   // ---------- Utilidades ----------
   function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),3200); }
@@ -304,8 +306,10 @@
   function syncPaperSeg(){ const v=$('paper').value; document.querySelectorAll('#paperSeg button').forEach(b=>b.classList.toggle('on', b.dataset.v===v)); }
   function restore(){
     const o = store.get('opts2', null);
-    if (!o){ $('text').value = sampleText; $('title').value = 'La gestión de riesgos'; return; }
+    if (!o){ $('text').value = sampleText; $('title').value = sampleTitle; return; }
     fields.forEach(id=>{ const el=$(id); if (o[id]===undefined) return; if (el.type==='checkbox') el.checked=o[id]; else el.value=o[id]; });
+    // si aún tenía el texto de ejemplo anterior, mostrar el nuevo
+    if ((o.text||'').startsWith(OLD_SAMPLE_START)){ $('text').value = sampleText; if (o.title==='La gestión de riesgos') $('title').value = sampleTitle; }
     if (o.ink){ ink=o.ink; $('inkCustom').value = ink; document.querySelectorAll('.ink').forEach(x=>x.classList.toggle('on', x.dataset.c===ink)); }
     if (o.seed) seed=o.seed;
   }
