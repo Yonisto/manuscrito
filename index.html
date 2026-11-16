@@ -62,6 +62,645 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .busy{position:fixed;inset:0;background:rgba(244,241,234,.6);display:none;align-items:center;justify-content:center;font-family:Caveat,cursive;font-size:30px;color:var(--accent);z-index:8}
   .busy.show{display:flex}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 4px}
+  .seg button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-weight:500;color:var(--text);cursor:pointer;transition:.15s}
+  .seg button svg{width:44px;height:44px}
+  .seg button:hover{border-color:#b9b0a0}
+  .seg button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  @media (max-width:860px){
+    .app{grid-template-columns:1fr;height:auto}
+    aside{border-right:0;border-bottom:1px solid var(--line)}
+    main{overflow:visible}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Manuscrito</h1>
+    <p class="sub">Pega tu texto y conviértelo en una hoja escrita a mano con tus propias fuentes.</p>
+
+    <section>
+      <h2>1 · Texto</h2>
+      <label for="title">Título (opcional)</label>
+      <input type="text" id="title" placeholder="Ej.: La gestión de riesgos">
+      <div class="row">
+        <div><label for="name">Nombre</label><input type="text" id="name" placeholder="Tu nombre"></div>
+        <div><label for="date">Fecha</label><input type="text" id="date" placeholder="15/11/2026"></div>
+      </div>
+      <label for="text">Párrafo o consulta</label>
+      <textarea id="text" placeholder="Pega aquí el texto que quieres pasar a mano…"></textarea>
+    </section>
+
+    <section>
+      <h2>2 · Fuentes de letra</h2>
+      <div class="drop" id="drop">
+        <b>Sube tus fuentes</b><br>
+        <span>Arrastra aquí o haz clic · .ttf .otf .woff .woff2</span>
+        <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,font/*" multiple hidden>
+      </div>
+      <p class="hint">Marca las que quieras usar. Si marcas varias, se alternan al azar para que la letra parezca más natural (ideal si subes 2 o 3 versiones de tu propia letra).</p>
+      <ul class="fonts" id="fontList"></ul>
+      <label for="mixMode">Alternar fuentes</label>
+      <select id="mixMode">
+        <option value="word">Por palabra</option>
+        <option value="char">Por letra (más realista con variantes de tu letra)</option>
+      </select>
+    </section>
+
+    <section>
+      <h2>3 · Hoja</h2>
+      <input type="hidden" id="paper" value="grid">
+      <div class="seg" id="paperSeg">
+        <button type="button" data-v="grid"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="4" width="32" height="32" fill="#fff" stroke="#9fd39a"/><path d="M12 4v32M20 4v32M28 4v32M4 12h32M4 20h32M4 28h32" stroke="#9fd39a" stroke-width="1"/></svg>Cuadros</button>
+        <button type="button" data-v="lined"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="4" width="32" height="32" fill="#fff"/><path d="M4 8h32M4 15h32M4 22h32M4 29h32M4 36h32" stroke="#9ea2a6" stroke-width="1.2"/></svg>Líneas</button>
+      </div>
+      <div class="row">
+        <div>
+          <label for="span">Alto de cada línea de texto</label>
+          <select id="span">
+            <option value="1">1 renglón (5 mm)</option>
+            <option value="2">2 renglones (10 mm)</option>
+          </select>
+        </div>
+        <div>
+          <label for="size">Tamaño</label>
+          <select id="size">
+            <option value="A4">A4</option>
+            <option value="letter">Carta (INEN)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="paperColor">Color del papel</label>
+          <select id="paperColor">
+            <option value="#ffffff">Blanco</option>
+            <option value="#fbf7ec">Crema</option>
+            <option value="#f6f8f1">Reciclado</option>
+          </select>
+        </div>
+        <div>
+          <label for="align">Alineación</label>
+          <select id="align">
+            <option value="left">Izquierda</option>
+            <option value="justify">Justificado</option>
+          </select>
+        </div>
+      </div>
+      <label class="chk"><input type="checkbox" id="indent" checked> Sangría al inicio de cada párrafo</label>
+    </section>
+
+    <section>
+      <h2>4 · Escritura</h2>
+      <label>Color de tinta</label>
+      <div class="inks" id="inks">
+        <span class="ink on" data-c="#1d3a8f" style="background:#1d3a8f" title="Azul"></span>
+        <span class="ink" data-c="#1c1c22" style="background:#1c1c22" title="Negro"></span>
+        <span class="ink" data-c="#b0261d" style="background:#b0261d" title="Rojo"></span>
+        <span class="ink" data-c="#2d6b3a" style="background:#2d6b3a" title="Verde"></span>
+        <span class="ink" data-c="#55565c" style="background:#55565c" title="Lápiz"></span>
+        <input type="color" id="inkCustom" value="#1d3a8f" title="Otro color">
+      </div>
+      <label>Tamaño de letra (respecto al renglón)</label>
+      <div class="range"><input type="range" id="fontPct" min="60" max="140" value="100"><output id="fontPctO"></output></div>
+      <label>Espacio entre letras</label>
+      <div class="range"><input type="range" id="letterSp" min="-4" max="12" value="0" step="0.5"><output id="letterSpO"></output></div>
+      <label>Espacio entre palabras</label>
+      <div class="range"><input type="range" id="wordSp" min="40" max="250" value="100"><output id="wordSpO"></output></div>
+      <label>Naturalidad (imperfección del trazo)</label>
+      <div class="range"><input type="range" id="natural" min="0" max="100" value="45"><output id="naturalO"></output></div>
+      <div class="actions"><button class="btn" id="reseed">🎲 Nueva variación</button></div>
+    </section>
+
+    <section>
+      <h2>5 · Descargar</h2>
+      <div class="actions">
+        <button class="btn primary" id="pdfBtn">Descargar PDF</button>
+        <button class="btn" id="pngAllBtn">PNG de cada hoja</button>
+      </div>
+      <p class="hint">Consejo: para crear una fuente con tu propia letra puedes usar Calligraphr (calligraphr.com): imprimes la plantilla, la llenas a mano, la escaneas y descargas el .ttf para subirlo aquí.</p>
+    </section>
+  </aside>
+
+  <main id="main">
+    <div class="topbar">
+      <span class="info" id="info"></span>
+    </div>
+    <div id="pages" style="display:contents"></div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<div class="busy" id="busy">Preparando…</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+
+  // ---------- Fuentes incluidas ----------
+  const BUILTIN = [
+    {family:'Caveat', label:'Caveat', builtin:true},
+    {family:'Indie Flower', label:'Indie Flower', builtin:true},
+    {family:'Patrick Hand', label:'Patrick Hand', builtin:true},
+    {family:'Shadows Into Light', label:'Shadows Into Light', builtin:true},
+    {family:'Homemade Apple', label:'Homemade Apple', builtin:true},
+  ];
+  let fonts = BUILTIN.map((f,i) => ({...f, enabled:i===0}));
+
+  // ---------- Estado ----------
+  // Hojas a 200 ppp (1 mm = 7,874 px). Cuadro / renglón de 5 mm y margen de 10 mm.
+  const PXMM = 200/25.4, CELL_MM = 5, MARGIN_MM = 10;
+  const SIZES = { A4:{mm:[210,297],pt:[595.28,841.89]}, letter:{mm:[215.9,279.4],pt:[612,792]} };
+  let ink = '#1d3a8f';
+  let seed = 12345;
+  let canvases = [];
+
+  const sampleText = 'La gestión de riesgos es el conjunto de acciones que buscan prevenir, reducir y controlar los efectos de los desastres sobre la población, los bienes y el ambiente.\nEn Ecuador, la Secretaría Nacional de Gestión de Riesgos coordina la preparación de las comunidades frente a amenazas como inundaciones, sismos y deslizamientos.';
+
+  // ---------- Utilidades ----------
+  function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),3200); }
+  function busy(on, msg){ $('busy').textContent = msg||'Preparando…'; $('busy').classList.toggle('show', on); }
+  function rng(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  const store = {
+    get(k,d){ try{ const v=localStorage.getItem('manuscrito:'+k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
+    set(k,v){ try{ localStorage.setItem('manuscrito:'+k, JSON.stringify(v)); }catch(e){} }
+  };
+
+  // ---------- IndexedDB para fuentes subidas ----------
+  function idb(){
+    return new Promise((res,rej)=>{
+      try{
+        const r = indexedDB.open('manuscrito',1);
+        r.onupgradeneeded = () => r.result.createObjectStore('fonts',{keyPath:'family'});
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      }catch(e){ rej(e); }
+    });
+  }
+  async function idbAll(){ try{ const db=await idb(); return await new Promise((res,rej)=>{ const q=db.transaction('fonts').objectStore('fonts').getAll(); q.onsuccess=()=>res(q.result||[]); q.onerror=()=>rej(q.error); }); }catch(e){ return []; } }
+  async function idbPut(v){ try{ const db=await idb(); db.transaction('fonts','readwrite').objectStore('fonts').put(v); }catch(e){} }
+  async function idbDel(k){ try{ const db=await idb(); db.transaction('fonts','readwrite').objectStore('fonts').delete(k); }catch(e){} }
+
+  async function registerFont(family, buffer){
+    const ff = new FontFace(family, buffer);
+    await ff.load();
+    document.fonts.add(ff);
+  }
+
+  async function addFontFiles(files){
+    let added = 0;
+    for (const file of files){
+      if (!/\.(ttf|otf|woff2?)$/i.test(file.name)){ toast('“'+file.name+'” no es una fuente (.ttf, .otf, .woff)'); continue; }
+      const base = file.name.replace(/\.[^.]+$/,'').replace(/[^\w\s-]/g,'').trim() || 'Fuente';
+      let family = 'MiFuente ' + base, n = 2;
+      while (fonts.some(f=>f.family===family)) family = 'MiFuente ' + base + ' ' + (n++);
+      try{
+        const buf = await file.arrayBuffer();
+        await registerFont(family, buf.slice(0));
+        if (added===0 && !fonts.some(f=>!f.builtin)) fonts.forEach(f=>f.enabled=false); // primera fuente propia: usarla sola
+        fonts.push({family, label:base, builtin:false, enabled:true});
+        await idbPut({family, label:base, data:buf});
+        added++;
+      }catch(e){ toast('No se pudo leer “'+file.name+'”. ¿Es una fuente válida?'); }
+    }
+    if (added){ saveFontPrefs(); renderFontList(); schedule(); toast(added===1?'Fuente agregada':'Se agregaron '+added+' fuentes'); }
+  }
+
+  function saveFontPrefs(){ store.set('enabled', fonts.filter(f=>f.enabled).map(f=>f.family)); }
+
+  function renderFontList(){
+    const ul = $('fontList'); ul.innerHTML='';
+    fonts.forEach((f,i)=>{
+      const li = document.createElement('li');
+      const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=f.enabled; cb.style.accentColor='var(--accent)';
+      cb.onchange = () => { f.enabled = cb.checked; if (!fonts.some(x=>x.enabled)){ f.enabled=true; cb.checked=true; toast('Debe quedar al menos una fuente marcada'); } saveFontPrefs(); schedule(); };
+      const s = document.createElement('div'); s.className='sample'; s.style.fontFamily = `"${f.family}", cursive`;
+      s.textContent = 'Ñandú ágil escribe';
+      const sm = document.createElement('small'); sm.innerHTML = escapeHtml(f.label) + (f.builtin?'<span class="tag">incluida</span>':'<span class="tag">tuya</span>');
+      s.appendChild(sm);
+      li.append(cb, s);
+      if (!f.builtin){
+        const del = document.createElement('button'); del.title='Quitar'; del.textContent='✕';
+        del.onclick = () => { fonts.splice(i,1); idbDel(f.family); if(!fonts.some(x=>x.enabled)) fonts[0].enabled=true; saveFontPrefs(); renderFontList(); schedule(); };
+        li.append(del);
+      }
+      ul.append(li);
+    });
+  }
+  function escapeHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // ---------- Opciones ----------
+  const fields = ['title','name','date','text','paper','size','paperColor','align','indent','span','fontPct','letterSp','wordSp','natural','mixMode'];
+  function readOpts(){
+    const o = {};
+    fields.forEach(id=>{ const el=$(id); o[id] = el.type==='checkbox'?el.checked:(el.type==='range'?parseFloat(el.value):el.value); });
+    o.ink = ink; o.seed = seed;
+    o.span = parseInt(o.span,10) || 1;
+    o.lineH = o.span * CELL_MM * PXMM;                 // alto de cada línea de texto en px
+    o.fontSize = o.lineH * (o.span===1 ? 0.95 : 0.62) * (o.fontPct/100);
+    return o;
+  }
+  function persist(){ store.set('opts2', readOpts()); }
+  function syncPaperSeg(){ const v=$('paper').value; document.querySelectorAll('#paperSeg button').forEach(b=>b.classList.toggle('on', b.dataset.v===v)); }
+  function restore(){
+    const o = store.get('opts2', null);
+    if (!o){ $('text').value = sampleText; $('title').value = 'La gestión de riesgos'; return; }
+    fields.forEach(id=>{ const el=$(id); if (o[id]===undefined) return; if (el.type==='checkbox') el.checked=o[id]; else el.value=o[id]; });
+    if (o.ink){ ink=o.ink; $('inkCustom').value = ink; document.querySelectorAll('.ink').forEach(x=>x.classList.toggle('on', x.dataset.c===ink)); }
+    if (o.seed) seed=o.seed;
+  }
+  function updateOutputs(){
+    $('fontPctO').textContent = $('fontPct').value+'%';
+    $('letterSpO').textContent = $('letterSp').value;
+    $('wordSpO').textContent = $('wordSp').value+'%';
+    $('naturalO').textContent = $('natural').value+'%';
+  }
+
+  // ---------- Maquetación ----------
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  function fontStr(fam, size){ return `${size}px "${fam}", "Caveat", cursive`; }
+
+  function geometry(o){
+    const S = SIZES[o.size] || SIZES.A4;
+    const [wmm, hmm] = S.mm;
+    const cols = Math.floor((wmm - 2*MARGIN_MM)/CELL_MM);
+    const rowsGrid = Math.floor((hmm - 2*MARGIN_MM)/CELL_MM);
+    const x0mm = (wmm - cols*CELL_MM)/2, y0mm = MARGIN_MM;
+    const W = Math.round(wmm*PXMM), H = Math.round(hmm*PXMM), cell = CELL_MM*PXMM;
+    const gx0 = x0mm*PXMM, gy0 = y0mm*PXMM, gx1 = gx0 + cols*cell, gy1 = gy0 + rowsGrid*cell;
+    const L = o.lineH;
+    const left = gx0 + (o.paper==='grid' ? cell : 2*PXMM);
+    const right = gx1 - 2*PXMM;
+    const top = gy0 + L;           // línea base de la primera línea de texto
+    const rows = Math.floor((gy1 - top)/L + 1e-6) + 1;
+    return {W, H, L, cell, cols, rowsGrid, gx0, gy0, gx1, gy1, left, right, top, rows, maxW:right-left};
+  }
+
+  function buildWord(text, o, r, active){
+    const size = o.fontSize;
+    const glyphs = [];
+    const ls = o.letterSp;
+    if (o.mixMode==='char' && active.length>1){
+      for (const ch of text){
+        const fam = active[Math.floor(r()*active.length)].family;
+        measureCtx.font = fontStr(fam,size);
+        glyphs.push({ch, fam, adv: measureCtx.measureText(ch).width + ls});
+      }
+    } else {
+      const fam = active[Math.floor(r()*active.length)].family;
+      measureCtx.font = fontStr(fam,size);
+      const chars = [...text]; let prev = 0, acc = '';
+      for (const ch of chars){ acc += ch; const w = measureCtx.measureText(acc).width; glyphs.push({ch, fam, adv:(w-prev)+ls}); prev = w; }
+    }
+    const width = glyphs.reduce((a,g)=>a+g.adv,0);
+    return {glyphs, width};
+  }
+
+  function layout(o, g, active){
+    const r = rng(o.seed);
+    const space = o.fontSize * 0.32 * (o.wordSp/100);
+    const indentPx = o.indent ? o.fontSize * 1.6 : 0;
+    const lines = [];
+    const paras = o.text.replace(/\r/g,'').split('\n');
+    for (const p of paras){
+      const words = p.split(/[ \t]+/).filter(Boolean);
+      if (!words.length){ lines.push({words:[], last:true, indent:0}); continue; }
+      let cur = [], curW = indentPx, first = true;
+      for (const w of words){
+        let wd = buildWord(w, o, r, active);
+        // palabra más larga que el renglón: se corta
+        while (wd.width > g.maxW - (cur.length? 0 : curW) && wd.glyphs.length>1 && !cur.length){
+          let acc=0, k=0; while (k<wd.glyphs.length && acc+wd.glyphs[k].adv < g.maxW-curW) acc+=wd.glyphs[k++].adv;
+          k = Math.max(1,k);
+          lines.push({words:[{glyphs:wd.glyphs.slice(0,k), width:acc}], last:false, indent:first?indentPx:0, noJustify:true});
+          first=false; curW=0;
+          const rest = wd.glyphs.slice(k); wd = {glyphs:rest, width:rest.reduce((a,x)=>a+x.adv,0)};
+        }
+        const need = (cur.length ? space : 0) + wd.width;
+        if (cur.length && curW + need > g.maxW){
+          lines.push({words:cur, last:false, indent:first?indentPx:0});
+          first=false; cur=[wd]; curW=wd.width;
+        } else { cur.push(wd); curW += need; }
+      }
+      lines.push({words:cur, last:true, indent:first?indentPx:0});
+    }
+    // quitar renglones vacíos finales
+    while (lines.length && !lines[lines.length-1].words.length) lines.pop();
+    return {lines, space};
+  }
+
+  function paginate(o, g, lines){
+    const header = [];
+    if (o.name.trim() || o.date.trim()) header.push({type:'meta'});
+    if (o.title.trim()) header.push({type:'title'});
+    if (header.length) header.push({type:'gap'});
+    const pages = []; let page = [...header];
+    for (const ln of lines){
+      if (page.length >= g.rows){ pages.push(page); page=[]; }
+      if (!page.length && !ln.words.length) continue; // no empezar hoja con renglón vacío
+      page.push({type:'text', ln});
+    }
+    if (page.length || !pages.length) pages.push(page);
+    return pages;
+  }
+
+  // ---------- Dibujo ----------
+  function drawPaper(ctx, o, g){
+    ctx.fillStyle = o.paperColor; ctx.fillRect(0,0,g.W,g.H);
+    // grano muy sutil del papel
+    const r = rng(7); ctx.fillStyle='rgba(120,100,60,0.025)';
+    for (let i=0;i<2600;i++){ ctx.fillRect(r()*g.W, r()*g.H, 1.4, 1.4); }
+    const px = v => Math.round(v) + 0.5;   // líneas nítidas
+    if (o.paper==='grid'){
+      // cuadrícula verde de 5 mm dentro de un recuadro
+      ctx.strokeStyle='#b8ddb2'; ctx.lineWidth=1.3;
+      ctx.beginPath();
+      for (let k=0;k<=g.cols;k++){ const x=px(g.gx0+k*g.cell); ctx.moveTo(x,px(g.gy0)); ctx.lineTo(x,px(g.gy1)); }
+      for (let k=0;k<=g.rowsGrid;k++){ const y=px(g.gy0+k*g.cell); ctx.moveTo(px(g.gx0),y); ctx.lineTo(px(g.gx1),y); }
+      ctx.stroke();
+    } else {
+      // rayado gris fino cada 5 mm
+      ctx.strokeStyle='#a3a7ab'; ctx.lineWidth=1.4;
+      ctx.beginPath();
+      for (let k=0;k<=g.rowsGrid;k++){ const y=px(g.gy0+k*g.cell); ctx.moveTo(px(g.gx0),y); ctx.lineTo(px(g.gx1),y); }
+      ctx.stroke();
+    }
+  }
+
+  function gauss(r){ return (r()+r()+r()-1.5)/1.5; }
+
+  function drawGlyphs(ctx, glyphs, x, y, o, r, slope, extraScale){
+    const j = o.natural/100, size = o.fontSize * (extraScale||1);
+    const wordDy = gauss(r)*j*size*0.05;
+    const wordAlpha = 0.86 + r()*0.14;
+    let cx = 0;
+    for (const gl of glyphs){
+      const sc = (1 + gauss(r)*j*0.05) * (extraScale||1);
+      const rot = gauss(r)*j*0.06;
+      const dy = wordDy + gauss(r)*j*size*0.025 + (x+cx)*slope;
+      ctx.save();
+      ctx.font = fontStr(gl.fam, o.fontSize);
+      ctx.globalAlpha = Math.min(1, wordAlpha * (0.9 + r()*0.1 + (1-j)*0.1));
+      ctx.translate(x+cx, y+dy); ctx.rotate(rot); ctx.scale(sc,sc);
+      ctx.fillText(gl.ch, 0, 0);
+      ctx.restore();
+      cx += gl.adv * (extraScale||1);
+    }
+    return cx;
+  }
+
+  function drawPage(pageRows, o, g, space, pageIndex, active){
+    const c = document.createElement('canvas'); c.width=g.W; c.height=g.H;
+    const ctx = c.getContext('2d');
+    drawPaper(ctx, o, g);
+    const r = rng(o.seed + 1000*pageIndex + 1);
+    const j = o.natural/100;
+    ctx.fillStyle = ink; ctx.textBaseline='alphabetic';
+    const lift = Math.max(3, g.cell*0.1);
+    pageRows.forEach((row, i)=>{
+      const baseY = g.top + i*g.L - lift;
+      const slope = gauss(r)*j*0.006;
+      const x0 = g.left + gauss(r)*j*5;
+      if (row.type==='meta'){
+        const rr = rng(o.seed+77);
+        if (o.name.trim()){ const w = buildWord(o.name.trim(), o, rr, active); drawGlyphs(ctx, w.glyphs, x0, baseY, o, r, slope, 0.85); }
+        if (o.date.trim()){ const w = buildWord(o.date.trim(), o, rr, active); drawGlyphs(ctx, w.glyphs, g.right - w.width*0.85, baseY, o, r, slope, 0.85); }
+      } else if (row.type==='title'){
+        const rr = rng(o.seed+99);
+        const words = o.title.trim().split(/\s+/).map(t=>buildWord(t,o,rr,active));
+        const sc = 1.12, sp = space*sc;
+        const total = words.reduce((a,w)=>a+w.width*sc,0) + sp*(words.length-1);
+        let x = Math.max(g.left, g.left + (g.maxW-total)/2);
+        const start = x;
+        words.forEach(w=>{ x += drawGlyphs(ctx, w.glyphs, x, baseY, o, r, slope, sc) + sp; });
+        // subrayado a mano
+        ctx.save(); ctx.strokeStyle=ink; ctx.globalAlpha=0.8; ctx.lineWidth=Math.max(1.6,o.fontSize*0.05); ctx.lineCap='round';
+        ctx.beginPath(); const uy = baseY + o.fontSize*0.16; ctx.moveTo(start-4, uy+gauss(r)*j*2);
+        ctx.quadraticCurveTo((start+x-sp)/2, uy + gauss(r)*j*5, x-sp+4, uy+gauss(r)*j*3); ctx.stroke(); ctx.restore();
+      } else if (row.type==='text'){
+        const ln = row.ln; if (!ln.words.length) return;
+        let gap = space;
+        if (o.align==='justify' && !ln.last && !ln.noJustify && ln.words.length>1){
+          const natural = ln.words.reduce((a,w)=>a+w.width,0);
+          const avail = g.maxW - ln.indent - natural;
+          const gj = avail/(ln.words.length-1);
+          if (gj < space*3.2) gap = gj;
+        }
+        let x = x0 + ln.indent;
+        ln.words.forEach(w=>{
+          const wobble = gauss(r)*j*space*0.15;
+          x += drawGlyphs(ctx, w.glyphs, x, baseY, o, r, slope, 1) + gap + wobble;
+        });
+      }
+    });
+    return c;
+  }
+
+  // ---------- Render ----------
+  let renderTimer = null, renderToken = 0;
+  function schedule(){ updateOutputs(); clearTimeout(renderTimer); renderTimer = setTimeout(render, 160); }
+
+  async function render(){
+    const token = ++renderToken;
+    const o = readOpts(); persist();
+    const active = fonts.filter(f=>f.enabled);
+    try{ await Promise.all(active.map(f=>document.fonts.load(fontStr(f.family, o.fontSize), 'AaÑñáé'))); await document.fonts.load('40px "Caveat"'); }catch(e){}
+    if (token !== renderToken) return;
+    const g = geometry(o);
+    const {lines, space} = layout(o, g, active);
+    const pages = paginate(o, g, lines);
+    canvases = pages.map((p,i)=>drawPage(p, o, g, space, i, active));
+    const box = $('pages'); box.innerHTML='';
+    canvases.forEach((c,i)=>{
+      const wrap = document.createElement('div'); wrap.className='page';
+      const bar = document.createElement('div'); bar.className='bar';
+      const lbl = document.createElement('span'); lbl.textContent = 'Hoja '+(i+1)+' de '+canvases.length;
+      const b = document.createElement('button'); b.className='btn'; b.textContent='Descargar PNG';
+      b.onclick = () => downloadPng(i);
+      bar.append(lbl,b); wrap.append(bar,c); box.append(wrap);
+    });
+    const words = o.text.trim() ? o.text.trim().split(/\s+/).length : 0;
+    $('info').textContent = `${words} palabras · ${canvases.length} ${canvases.length===1?'hoja':'hojas'} · ${active.length} ${active.length===1?'fuente':'fuentes'}`;
+  }
+
+  // ---------- Descargas ----------
+  async function getDownloads(){
+    try{ if (window.claude && typeof window.claude.use==='function') return await window.claude.use('downloads'); }catch(e){}
+    return null;
+  }
+  async function saveFile(filename, blob){
+    const dl = await getDownloads();
+    if (dl){
+      try{ await dl.save({filename, data:blob}); toast('Listo: '+filename); return true; }
+      catch(e){
+        const code = e && e.code;
+        if (code==='declined') { toast('Descarga cancelada'); return false; }
+        if (code==='rate_limited') { toast('Espera un momento y vuelve a intentarlo'); return false; }
+        if (!['unavailable','not_granted','capability_disabled','capability_removed'].includes(code)){ toast('No se pudo descargar ('+(code||'error')+')'); return false; }
+      }
+    }
+    // Fuera de Claude (archivo abierto en el navegador)
+    try{
+      const url = URL.createObjectURL(blob); const a = document.createElement('a');
+      a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000); return true;
+    }catch(e){ toast('Este visor no permite descargas'); return false; }
+  }
+  const toBlob = (c, type, q) => new Promise(res=>c.toBlob(res, type, q));
+  function baseName(){ const t = $('title').value.trim() || 'hoja-manuscrita'; return t.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w-]+/g,'-').replace(/^-|-$/g,'').toLowerCase() || 'hoja-manuscrita'; }
+
+  async function downloadPng(i){
+    const blob = await toBlob(canvases[i], 'image/png');
+    await saveFile(`${baseName()}-hoja-${i+1}.png`, blob);
+  }
+
+  async function downloadPdf(){
+    if (!canvases.length) return;
+    busy(true, 'Armando el PDF…');
+    try{
+      const o = readOpts(); const S = SIZES[o.size] || SIZES.A4;
+      const imgs = [];
+      for (const c of canvases){ const b = await toBlob(c,'image/jpeg',0.92); imgs.push({bytes:new Uint8Array(await b.arrayBuffer()), w:c.width, h:c.height}); }
+      const blob = buildPdf(imgs, S.pt[0], S.pt[1]);
+      busy(false);
+      await saveFile(`${baseName()}.pdf`, blob);
+    }catch(e){ busy(false); toast('No se pudo crear el PDF'); }
+  }
+
+  // PDF mínimo: una imagen JPEG por página
+  function buildPdf(imgs, pw, ph){
+    const enc = new TextEncoder(); const parts = []; let len = 0; const offsets = [];
+    const push = d => { const u = typeof d==='string' ? enc.encode(d) : d; parts.push(u); len += u.length; };
+    const n = imgs.length;
+    // objetos: 1 catálogo, 2 páginas, luego por hoja: page, contents, image
+    const pageId = i => 3 + i*3, contId = i => 4 + i*3, imgId = i => 5 + i*3;
+    const total = 2 + n*3;
+    push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    const obj = (id, body) => { offsets[id] = len; push(`${id} 0 obj\n`); body(); push('\nendobj\n'); };
+    obj(1, ()=>push('<< /Type /Catalog /Pages 2 0 R >>'));
+    obj(2, ()=>push(`<< /Type /Pages /Count ${n} /Kids [${imgs.map((_,i)=>pageId(i)+' 0 R').join(' ')}] >>`));
+    imgs.forEach((im,i)=>{
+      const W = pw.toFixed(2), H = ph.toFixed(2);
+      obj(pageId(i), ()=>push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${imgId(i)} 0 R >> >> /Contents ${contId(i)} 0 R >>`));
+      const content = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+      obj(contId(i), ()=>{ push(`<< /Length ${content.length} >>\nstream\n`); push(content); push('\nendstream'); });
+      obj(imgId(i), ()=>{ push(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`); push(im.bytes); push('\nendstream'); });
+    });
+    const xref = len;
+    let x = `xref\n0 ${total+1}\n0000000000 65535 f \n`;
+    for (let id=1; id<=total; id++) x += String(offsets[id]).padStart(10,'0') + ' 00000 n \n';
+    push(x);
+    push(`trailer\n<< /Size ${total+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+    return new Blob(parts, {type:'application/pdf'});
+  }
+
+  async function downloadAllPng(){
+    for (let i=0;i<canvases.length;i++){ const ok = await downloadPng(i); if (ok===false) break; }
+  }
+
+  // ---------- Eventos ----------
+  fields.forEach(id=>{ $(id).addEventListener('input', schedule); $(id).addEventListener('change', schedule); });
+  document.querySelectorAll('.ink').forEach(el=>el.addEventListener('click',()=>{
+    ink = el.dataset.c; $('inkCustom').value = ink;
+    document.querySelectorAll('.ink').forEach(x=>x.classList.toggle('on', x===el)); schedule();
+  }));
+  $('inkCustom').addEventListener('input', e=>{ ink = e.target.value; document.querySelectorAll('.ink').forEach(x=>x.classList.remove('on')); schedule(); });
+  document.querySelectorAll('#paperSeg button').forEach(b=>b.addEventListener('click',()=>{ $('paper').value=b.dataset.v; syncPaperSeg(); schedule(); }));
+  $('reseed').addEventListener('click', ()=>{ seed = Math.floor(Math.random()*1e9); schedule(); });
+  $('pdfBtn').addEventListener('click', downloadPdf);
+  $('pngAllBtn').addEventListener('click', downloadAllPng);
+
+  const drop = $('drop'), file = $('fontFile');
+  drop.addEventListener('click', ()=>file.click());
+  file.addEventListener('change', ()=>{ addFontFiles([...file.files]); file.value=''; });
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e=>{ if (e.dataTransfer && e.dataTransfer.files) addFontFiles([...e.dataTransfer.files]); });
+  // también se puede soltar en cualquier parte
+  window.addEventListener('dragover', e=>e.preventDefault());
+  window.addEventListener('drop', e=>{ e.preventDefault(); if (e.target!==drop && e.dataTransfer && e.dataTransfer.files.length) addFontFiles([...e.dataTransfer.files]); });
+
+  // ---------- Inicio ----------
+  (async function init(){
+    restore(); syncPaperSeg(); updateOutputs();
+    const saved = await idbAll();
+    for (const s of saved){
+      try{ await registerFont(s.family, s.data.slice(0)); fonts.push({family:s.family, label:s.label||s.family, builtin:false, enabled:false}); }catch(e){}
+    }
+    const en = store.get('enabled', null);
+    if (en && en.length){ fonts.forEach(f=>f.enabled = en.includes(f.family)); if (!fonts.some(f=>f.enabled)) fonts[0].enabled=true; }
+    renderFontList();
+    render();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ renderFontList(); schedule(); });
+  })();
+})();
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manuscrito — texto a hoja escrita a mano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Indie+Flower&family=Patrick+Hand&family=Shadows+Into+Light&family=Homemade+Apple&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f1ea; --panel:#fffdf8; --line:#e3ddd0; --text:#2a2723; --muted:#7a7368;
+    --accent:#1f3f8a; --accent-soft:#e6ecfa; --danger:#b3412f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+  .app{display:grid;grid-template-columns:380px 1fr;height:100vh}
+  aside{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:20px 20px 40px}
+  main{overflow-y:auto;padding:28px 24px 60px;display:flex;flex-direction:column;align-items:center;gap:26px}
+  h1{font-family:Caveat,cursive;font-weight:600;font-size:38px;margin:0;line-height:1;color:var(--accent)}
+  .sub{color:var(--muted);margin:4px 0 18px;font-size:13px}
+  section{border-top:1px solid var(--line);padding:16px 0 6px}
+  section>h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+  label{display:block;font-size:13px;margin:10px 0 4px;font-weight:500}
+  textarea,input[type=text],select{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit;background:#fff;color:var(--text)}
+  textarea{min-height:190px;resize:vertical;line-height:1.5}
+  textarea:focus,input:focus,select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .range{display:flex;align-items:center;gap:10px}
+  .range input{flex:1;accent-color:var(--accent)}
+  .range output{width:38px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+  .chk{display:flex;align-items:center;gap:8px;font-weight:400;margin:8px 0}
+  .chk input{accent-color:var(--accent)}
+  .drop{border:1.5px dashed #c8bfae;border-radius:10px;padding:16px;text-align:center;cursor:pointer;color:var(--muted);background:#fbf9f4;transition:.15s}
+  .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .drop b{color:var(--text)}
+  .fonts{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .fonts li{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:#fff}
+  .fonts li .sample{flex:1;font-size:24px;line-height:1.15;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .fonts li small{display:block;font-family:Inter,sans-serif;font-size:11px;color:var(--muted)}
+  .fonts li button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 4px}
+  .fonts li button:hover{color:var(--danger)}
+  .tag{font-family:Inter,sans-serif;font-size:10px;background:#efe9dd;color:var(--muted);border-radius:4px;padding:1px 5px;margin-left:4px}
+  .inks{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .ink{width:28px;height:28px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer}
+  .ink.on{box-shadow:0 0 0 2px var(--accent)}
+  input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:6px;padding:2px;background:#fff}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 14px;font:inherit;font-weight:500;cursor:pointer;color:var(--text)}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{filter:brightness(1.1);color:#fff}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .hint{font-size:12px;color:var(--muted);line-height:1.5;margin:6px 0}
+  .topbar{width:100%;max-width:680px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .topbar .info{color:var(--muted);font-size:13px}
+  .page{width:100%;max-width:680px;position:relative}
+  .page canvas{width:100%;height:auto;display:block;box-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 28px rgba(60,45,20,.12);border-radius:2px;background:#fff}
+  .page .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--muted);font-size:12px}
+  .page .bar .btn{padding:5px 10px;font-size:12px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#2a2723;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:9;max-width:90vw}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .busy{position:fixed;inset:0;background:rgba(244,241,234,.6);display:none;align-items:center;justify-content:center;font-family:Caveat,cursive;font-size:30px;color:var(--accent);z-index:8}
+  .busy.show{display:flex}
   @media (max-width:860px){
     .app{grid-template-columns:1fr;height:auto}
     aside{border-right:0;border-bottom:1px solid var(--line)}
